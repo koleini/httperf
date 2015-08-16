@@ -92,6 +92,7 @@ static struct {
 
 	u_long           num_responses;
 	Time            call_response_sum;	/* sum of response times */
+	Time            call_response_sum2;	/* sum^2 of response times */
 
 	Time            call_xfer_sum;	/* sum of response times */
 
@@ -277,7 +278,9 @@ recv_start(Event_Type et, Object * obj, Any_Type reg_arg, Any_Type call_arg)
 
 	now = timer_now();
 
-	basic.call_response_sum += now - c->basic.time_send_start;
+    Time t = now - c->basic.time_send_start;
+	basic.call_response_sum += t;
+	basic.call_response_sum2 += SQUARE(t);
 	c->basic.time_recv_start = now;
 	++basic.num_responses;
 
@@ -359,7 +362,7 @@ static void
 dump(void)
 {
 	Time            conn_period = 0.0, call_period = 0.0;
-	Time            conn_time = 0.0, resp_time = 0.0, xfer_time = 0.0;
+	Time            conn_time = 0.0, resp_time = 0.0, resp_time_dev = 0.0, xfer_time = 0.0;
 	Time            call_size = 0.0, hdr_size = 0.0, reply_size =
 		0.0, footer_size = 0.0;
 	Time            lifetime_avg = 0.0, lifetime_stddev =
@@ -457,11 +460,16 @@ dump(void)
 		 basic.num_reply_rates);
 
 	if (basic.num_responses > 0)
+	{
 		resp_time = basic.call_response_sum / basic.num_responses;
+        resp_time_dev = STDDEV(basic.call_response_sum,
+								basic.call_response_sum2,
+								basic.num_responses);
+	}
 	if (total_replies > 0)
 		xfer_time = basic.call_xfer_sum / total_replies;
-	printf("Reply time [ms]: response %.1f transfer %.1f\n",
-		   1e3 * resp_time, 1e3 * xfer_time);
+	printf("Reply time [ms]: response %.1f stddev %.1f transfer %.1f\n",
+		   1e3 * resp_time, 1e3 * resp_time_dev, 1e3 * xfer_time);
 
 	if (total_replies) {
 		hdr_size = basic.hdr_bytes_received / total_replies;
