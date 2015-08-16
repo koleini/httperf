@@ -8,6 +8,14 @@ The focus of httperf is not on implementing one particular benchmark but on prov
 
 ## Building httperf
 
+###Update:
+
+Run
+
+	$ autoreconf -i
+
+###Old instruction
+
 This release of httperf is using the standard GNU configuration
 mechanism.  The following steps can be used to build it:
 
